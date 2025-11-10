@@ -1,24 +1,30 @@
+// main_page.dart
 import 'package:flutter/material.dart';
-import '../widgets/BottomNav.dart' show BottomNav;
+import 'package:provider/provider.dart';
+import '../controllers/home_controller.dart';
+import '../widgets/BottomNav.dart';
 import 'home_page.dart';
 import 'viaje_screen.dart';
 import 'chatsi_page.dart';
-import 'incidencias_page.dart'; // Importa la clase completa
-
-// Placeholder pages
-// class IncidenciasPage extends StatelessWidget {
-//  const IncidenciasPage({super.key});
-//  @override
-//  Widget build(BuildContext context) => const Center(child: Text('Incidencias'));
-// }
+import 'incidencias_page.dart';
 
 class PerfilPage extends StatelessWidget {
-  const PerfilPage({super.key});
+  final Map<String, dynamic> user;
+  const PerfilPage({super.key, required this.user});
+
   @override
-  Widget build(BuildContext context) => const Center(child: Text('Perfil'));
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Text(
+          'Perfil de ${user['nombres']}',
+          style: const TextStyle(fontSize: 20),
+        ),
+      ),
+    );
+  }
 }
 
-// MainPage con BottomNav
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
@@ -29,30 +35,43 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
 
-  late final List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-    _pages = [
-      HomePage(),
-      const MapaPage(),
-      const ChatPage(),
-      const IncidenciasPage(), // Ahora usa la clase importada del archivo
-      const PerfilPage(),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNav(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+    return ChangeNotifierProvider<HomeController>(
+      create: (_) => HomeController()..loadUser(),
+      child: Consumer<HomeController>(
+        builder: (context, controller, child) {
+          // Mientras carga el usuario
+          if (controller.loading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          // Si no hay usuario
+          final user = controller.user;
+          if (user == null) {
+            return const Scaffold(
+              body: Center(child: Text('Usuario no encontrado')),
+            );
+          }
+
+          // Construimos las páginas usando HomeController
+          final pages = [
+            HomePage(),
+            const MapaPage(),
+            ChatPage(),
+            IncidenciasPage(),
+
+          ];
+
+          return Scaffold(
+            body: pages[_currentIndex],
+            bottomNavigationBar: BottomNav(
+              currentIndex: _currentIndex,
+              onTap: (index) => setState(() => _currentIndex = index),
+            ),
+          );
         },
       ),
     );
