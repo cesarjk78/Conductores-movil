@@ -1,114 +1,133 @@
+// viaje_screen.dart (MapaPage)
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../controllers/home_controller.dart';
+import '../../data/services/obtenerViaje.dart';
 
 class MapaPage extends StatelessWidget {
   const MapaPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFEFE8EF),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // GIF con borde marrón
-              Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.brown, width: 3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    'assets/busgira.gif', // <- reemplaza con la ruta de tu GIF
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
+    final homeController = context.watch<HomeController>();
+    final dni = homeController.user?.identificacion ?? '';
 
-              const SizedBox(height: 20),
+    if (dni.isEmpty) {
+      return const Scaffold(
+        body: Center(child: Text('DNI no disponible')),
+      );
+    }
 
-              const Text(
-                'Viaje',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+    return FutureBuilder<List<dynamic>>(
+      future: ConductorService().getViajesEnCurso(dni),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-              const SizedBox(height: 20),
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(child: Text('Error al cargar viajes: ${snapshot.error}')),
+          );
+        }
 
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F0F0),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.grey.shade400),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'En ruta',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    const SizedBox(width: 8),
-                    Row(
-                      children: [
-                        _buildDot(),
-                        _buildDot(),
-                        _buildDot(),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+        final viajes = snapshot.data;
+        if (viajes == null || viajes.isEmpty) {
+          return const Scaffold(
+            body: Center(child: Text('No hay viajes en curso')),
+          );
+        }
 
-              const SizedBox(height: 40),
-              _buildActionButton('EMERGENCIA TOTAL', const Color(0xFFB71C1C)),
-              const SizedBox(height: 16),
-              _buildActionButton('FALLA MECANICA', const Color(0xFF4CAF50)),
-              const SizedBox(height: 16),
-              _buildActionButton('DESASTRE NATURAL', const Color(0xFFD81B60)),
-              const SizedBox(height: 40),
+        final viaje = viajes.first;
+        final ruta = viaje['ruta_id']?['nombre'] ?? 'Ruta desconocida';
+        final origen = viaje['ruta_id']?['paraderos']?[0]?['nombre'] ?? '---';
+        final destino = viaje['ruta_id']?['paraderos']?.last?['nombre'] ?? '---';
+        final bus = viaje['bus_id']?['placa'] ?? '---';
+        final conductor = '${viaje['conductor_id']?['datos_personal']?['nombres'] ?? ''} '
+            '${viaje['conductor_id']?['datos_personal']?['apellidos'] ?? ''}';
 
-              Row(
+        return Scaffold(
+          backgroundColor: const Color(0xFFEFE8EF),
+          appBar: AppBar(
+            title: Text('Mapa del viaje: $ruta'),
+            backgroundColor: const Color(0xFF673AB7),
+          ),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.check_circle, color: Colors.green),
-                  const SizedBox(width: 8),
-                  const Text('Gps activo'),
-                  const SizedBox(width: 24),
-                  const Icon(Icons.wifi, color: Colors.green),
-                  const SizedBox(width: 8),
-                  const Text('Conectado via SIM'),
+                  Container(
+                    width: 150,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.brown, width: 3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        'assets/busgira.gif',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    ruta,
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Origen: $origen', style: const TextStyle(fontSize: 16)),
+                  Text('Destino: $destino', style: const TextStyle(fontSize: 16)),
+                  Text('Bus: $bus', style: const TextStyle(fontSize: 16)),
+                  Text('Conductor: $conductor', style: const TextStyle(fontSize: 16)),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F0F0),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.grey.shade400),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('En ruta', style: TextStyle(color: Colors.grey)),
+                        const SizedBox(width: 8),
+                        Row(children: [_buildDot(), _buildDot(), _buildDot()]),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  _buildActionButton('EMERGENCIA TOTAL', const Color(0xFFB71C1C)),
+                  const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                  const SizedBox(height: 40),
+                  const SizedBox(height: 40),
+                  ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF673AB7),
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                    ),
+                    child: const Text('Finalizar viaje',
+                        style: TextStyle(fontSize: 18, color: Colors.white)),
+                  ),
                 ],
               ),
-
-              const SizedBox(height: 40),
-
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF673AB7),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                ),
-                child: const Text(
-                  'Finalizar viaje',
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
