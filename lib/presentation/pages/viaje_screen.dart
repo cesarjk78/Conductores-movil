@@ -107,11 +107,34 @@ class MapaPage extends StatelessWidget {
                   const SizedBox(height: 40),
                   _buildActionButton('EMERGENCIA TOTAL', const Color(0xFFB71C1C)),
                   const SizedBox(height: 16),
-                  const SizedBox(height: 16),
-                  const SizedBox(height: 40),
-                  const SizedBox(height: 40),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      // Solo imprimir acción, sin sockets ni ubicación
+                      final idViaje = viaje['_id'];
+                      print('🚀 Finalizando viaje con ID: $idViaje');
+
+                      final exito = await ConductorService().cambiarEstadoViaje(idViaje, 'completado');
+
+                      if (exito) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('✅ Viaje finalizado correctamente'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        Navigator.of(context).pushNamedAndRemoveUntil(
+                          '/home',
+                          (route) => false,
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('❌ No se pudo finalizar el viaje'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF673AB7),
                       minimumSize: const Size(double.infinity, 50),
@@ -119,8 +142,10 @@ class MapaPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(25),
                       ),
                     ),
-                    child: const Text('Finalizar viaje',
-                        style: TextStyle(fontSize: 18, color: Colors.white)),
+                    child: const Text(
+                      'Finalizar viaje',
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
                   ),
                 ],
               ),
