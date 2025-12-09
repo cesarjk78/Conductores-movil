@@ -59,4 +59,43 @@ class ConductorService {
     print('🚗 Buscando viajes en curso para DNI: $dni');
     return await _getViajes(dni, 'curso');
   }
+
+    /// 🔁 Cambia el estado de un viaje (pendiente ⇄ en_curso)
+  Future<bool> cambiarEstadoViaje(String idViaje, String nuevoEstado) async {
+    final token = await _getAuthToken();
+    if (token == null) {
+      throw Exception('❌ Token no encontrado. Inicia sesión nuevamente.');
+    }
+
+    final url = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.cambiarEstadoViaje}');
+    print('📤 POST => $url');
+    print('📝 Datos => {id_viaje: $idViaje, estado: $nuevoEstado}');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'id_viaje': idViaje,
+          'estado': nuevoEstado,
+        }),
+      );
+
+      print('📥 Respuesta (${response.statusCode}): ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('✅ Estado de viaje actualizado correctamente.');
+        return true;
+      } else {
+        print('❌ Error al cambiar estado: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('💥 Error en la petición POST: $e');
+      return false;
+    }
+  }
 }

@@ -4,6 +4,7 @@ import '../controllers/home_controller.dart';
 import '../../data/services/weather_service.dart';
 import '../../data/services/obtenerViaje.dart';
 
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -14,6 +15,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final weatherService = WeatherService();
   final conductorService = ConductorService();
+
 
   double? _currentTemp;
   String? _currentLocation;
@@ -45,7 +47,7 @@ class _HomePageState extends State<HomePage> {
         _loadingWeather = false;
       });
     } catch (e) {
-      print("Error al cargar el clima: $e");
+      print("❌ Error al cargar el clima: $e");
       setState(() => _loadingWeather = false);
     }
   }
@@ -69,8 +71,33 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      print("Error al cargar viajes: $e");
+      print("❌ Error al cargar viajes: $e");
       setState(() => _loadingViajes = false);
+    }
+  }
+
+  Future<void> _iniciarViaje(BuildContext context, String idViaje) async {
+
+    final exito = await ConductorService().cambiarEstadoViaje(idViaje, 'en-curso');
+
+    if (exito) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Viaje finalizado correctamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/home',
+        (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ No se pudo finalizar el viaje'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -78,7 +105,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF6B4582);
     const Color secondaryColor = Color(0xFFE4E4E4);
-    const Color accentColor = Color(0xFFB485C6);
     const Color textColor = Color(0xFF333333);
 
     return ChangeNotifierProvider<HomeController>(
@@ -98,7 +124,6 @@ class _HomePageState extends State<HomePage> {
             );
           }
 
-          // Cargar viajes solo una vez cuando el usuario está disponible
           if (_loadingViajes) {
             _loadViajes(user.identificacion);
           }
@@ -111,21 +136,19 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               centerTitle: true,
-              elevation: 2,
             ),
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Bienvenida
                   Row(
                     children: [
                       const Text('👋', style: TextStyle(fontSize: 28)),
                       const SizedBox(width: 8),
                       Text(
                         '¡Bienvenido, ${user.nombres}!',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: textColor,
@@ -133,166 +156,18 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-
-                  // Info usuario
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: secondaryColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('👤 ${user.nombres} ${user.apellidos}',
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 8),
-                        Text('📧 Correo: ${user.email}',
-                            style: const TextStyle(fontSize: 16)),
-                        Text('🆔 DNI: ${user.identificacion}',
-                            style: const TextStyle(fontSize: 16)),
-                      ],
-                    ),
-                  ),
-
                   const SizedBox(height: 20),
-
-                  // Info bus y clima
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: secondaryColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Bus n. 4521',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Siguiente parada',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Icon(Icons.cloud, color: Colors.grey.shade600),
-                            Text(
-                              _loadingWeather
-                                  ? '...'
-                                  : _currentTemp != null
-                                      ? '${_currentTemp!.toStringAsFixed(1)}°C'
-                                      : 'N/D',
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            Text(
-                              _currentLocation ?? 'Ubicación...',
-                              style: const TextStyle(fontSize: 14, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
+                  _buildUserCard(user, secondaryColor),
                   const SizedBox(height: 20),
-
-                  // Lista de viajes
+                  _buildBusWeatherCard(secondaryColor),
+                  const SizedBox(height: 20),
                   if (_loadingViajes)
                     const Center(child: CircularProgressIndicator())
                   else if (_viajes.isEmpty)
                     const Center(child: Text('No hay viajes disponibles.'))
                   else
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '🚌 Viajes $_tipoViaje',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ..._viajes.map((v) => Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: secondaryColor,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  )
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        v['ruta_id']?['nombre'] ?? 'Ruta desconocida',
-                                        style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      Text(
-                                        'Origen: ${v['origen'] ?? '---'}',
-                                        style: const TextStyle(fontSize: 15),
-                                      ),
-                                      Text(
-                                        'Destino: ${v['destino'] ?? '---'}',
-                                        style: const TextStyle(fontSize: 15),
-                                      ),
-                                    ],
-                                  ),
-                                  const Icon(Icons.directions_bus,
-                                      color: Color(0xFF6B4582)),
-                                ],
-                              ),
-                            )),
-                      ],
-                    ),
-
+                    _buildViajesList(),
                   const SizedBox(height: 30),
-
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -300,18 +175,14 @@ class _HomePageState extends State<HomePage> {
                       icon: const Icon(Icons.logout),
                       label: const Text(
                         'Cerrar Sesión',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryColor,
-                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        elevation: 3,
                       ),
                     ),
                   ),
@@ -324,26 +195,136 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildReportRow(String label, String value, Color valueColor, Color labelColor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  // ----------------- COMPONENTES REUTILIZABLES -----------------
+
+  Widget _buildUserCard(dynamic user, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: labelColor,
-              )),
-          Text(value,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: valueColor,
-              )),
+          Text('👤 ${user.nombres} ${user.apellidos}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text('📧 Correo: ${user.email}', style: const TextStyle(fontSize: 16)),
+          Text('🆔 DNI: ${user.identificacion}', style: const TextStyle(fontSize: 16)),
         ],
       ),
     );
   }
+
+  Widget _buildBusWeatherCard(Color color) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4))
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Bus n. 4521', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              SizedBox(height: 4),
+              Text('Siguiente parada', style: TextStyle(fontSize: 16, color: Colors.grey)),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Icon(Icons.cloud, color: Colors.grey),
+              Text(
+                _loadingWeather
+                    ? '...'
+                    : _currentTemp != null
+                        ? '${_currentTemp!.toStringAsFixed(1)}°C'
+                        : 'N/D',
+                style: const TextStyle(fontSize: 16),
+              ),
+              Text(_currentLocation ?? 'Ubicación...', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildViajesList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('🚌 Viajes $_tipoViaje', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        ..._viajes.map((v) => _buildViajeCard(v)).toList(),
+      ],
+    );
+  }
+
+Widget _buildViajeCard(dynamic viaje) {
+  const Color cardColor = Color(0xFFE4E4E4);
+
+  return Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: cardColor,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        )
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          viaje['ruta_id']?['nombre'] ?? 'Ruta desconocida',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        Text('Origen: ${viaje['origen'] ?? '---'}',
+            style: const TextStyle(fontSize: 15)),
+        Text('Destino: ${viaje['destino'] ?? '---'}',
+            style: const TextStyle(fontSize: 15)),
+
+        const SizedBox(height: 12),
+
+        // Mostrar botón solo si el viaje es pendiente
+        if (_tipoViaje == "Pendientes")
+          ElevatedButton(
+            onPressed: () {
+              final idViaje = viaje['_id'];
+              _iniciarViaje(context, idViaje);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              "Empezar viaje",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+      ],
+    ),
+  );
 }
+
+}
+
+
