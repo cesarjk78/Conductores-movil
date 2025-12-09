@@ -11,6 +11,7 @@ class MapaPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final homeController = context.watch<HomeController>();
     final dni = homeController.user?.identificacion ?? '';
+    
 
     if (dni.isEmpty) {
       return const Scaffold(
