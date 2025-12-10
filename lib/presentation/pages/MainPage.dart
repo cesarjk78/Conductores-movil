@@ -7,6 +7,7 @@ import 'home_page.dart';
 import 'viaje_screen.dart';
 import 'chatsi_page.dart';
 import 'incidencias_page.dart';
+import 'historial_incidentes_page.dart';
 
 class PerfilPage extends StatelessWidget {
   final Map<String, dynamic> user;
@@ -62,6 +63,7 @@ class _MainPageState extends State<MainPage> {
             const MapaPage(),
             ChatPage(),
             IncidenciasPage(),
+            HistorialIncidentesPage(),
 
           ];
 

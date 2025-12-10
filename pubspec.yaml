@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  jwt_decoder: ^2.0.1 
   provider: ^6.0.5
   http: ^0.13.5
   flutter_secure_storage: ^9.0.0 
@@ -72,6 +73,7 @@ flutter:
     - assets/encontrar.png
     - assets/busgira.gif
     - assets/porqmiras.jpeg
+    - assets/busesito.png
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

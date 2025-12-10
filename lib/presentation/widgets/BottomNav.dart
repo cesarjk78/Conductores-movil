@@ -29,16 +29,16 @@ class BottomNav extends StatelessWidget {
           label: 'Mapa',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.chat),
-          label: 'Chat',
+          icon: Icon(Icons.calendar_month),
+          label: 'Itinirario',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.report),
           label: 'Incidencias',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Perfil',
+        icon: Icon(Icons.history),
+        label: 'Historial',
         ),
       ],
     );

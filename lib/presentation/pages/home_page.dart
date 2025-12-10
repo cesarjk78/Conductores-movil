@@ -101,99 +101,107 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF6B4582);
-    const Color secondaryColor = Color(0xFFE4E4E4);
-    const Color textColor = Color(0xFF333333);
+@override
+Widget build(BuildContext context) {
+  const Color primaryColor = Color(0xFF6B4582);
+  const Color secondaryColor = Color(0xFFE4E4E4);
+  const Color textColor = Color(0xFF333333);
 
-    return ChangeNotifierProvider<HomeController>(
-      create: (_) => HomeController()..loadUser(),
-      child: Consumer<HomeController>(
-        builder: (context, controller, child) {
-          if (controller.loading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
+  final controller = Provider.of<HomeController>(context);
 
-          final user = controller.user;
-          if (user == null) {
-            return const Scaffold(
-              body: Center(child: Text('Usuario no encontrado')),
-            );
-          }
-
-          if (_loadingViajes) {
-            _loadViajes(user.identificacion);
-          }
-
-          return Scaffold(
-            appBar: AppBar(
-              backgroundColor: primaryColor,
-              title: const Text(
-                'La Perla de Altomayo',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              centerTitle: true,
-            ),
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text('👋', style: TextStyle(fontSize: 28)),
-                      const SizedBox(width: 8),
-                      Text(
-                        '¡Bienvenido, ${user.nombres}!',
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  _buildUserCard(user, secondaryColor),
-                  const SizedBox(height: 20),
-                  _buildBusWeatherCard(secondaryColor),
-                  const SizedBox(height: 20),
-                  if (_loadingViajes)
-                    const Center(child: CircularProgressIndicator())
-                  else if (_viajes.isEmpty)
-                    const Center(child: Text('No hay viajes disponibles.'))
-                  else
-                    _buildViajesList(),
-                  const SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => controller.logout(),
-                      icon: const Icon(Icons.logout),
-                      label: const Text(
-                        'Cerrar Sesión',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+  // LOADING DEL USUARIO
+  if (controller.loading) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
     );
   }
+
+  // NO HAY USUARIO
+  final user = controller.user;
+  if (user == null) {
+    return const Scaffold(
+      body: Center(child: Text('Usuario no encontrado')),
+    );
+  }
+
+  // CARGA VIAJES UNA SOLA VEZ
+  if (_loadingViajes) {
+    _loadViajes(user.identificacion);
+  }
+
+  return Scaffold(
+    appBar: AppBar(
+      backgroundColor: primaryColor,
+      title: const Text(
+        'La Perla de Altomayo',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      centerTitle: true,
+    ),
+
+    body: SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('👋', style: TextStyle(fontSize: 28)),
+              const SizedBox(width: 8),
+              Text(
+                '¡Bienvenido, ${user.nombres}!',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          _buildUserCard(user, secondaryColor),
+
+          const SizedBox(height: 20),
+
+          _buildBusWeatherCard(secondaryColor),
+
+          const SizedBox(height: 20),
+
+          if (_loadingViajes)
+            const Center(child: CircularProgressIndicator())
+          else if (_viajes.isEmpty)
+            const Center(child: Text('No hay viajes disponibles.'))
+          else
+            _buildViajesList(),
+
+          const SizedBox(height: 30),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => controller.logout(),
+              icon: const Icon(Icons.logout),
+              label: const Text(
+                'Cerrar Sesión',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 
   // ----------------- COMPONENTES REUTILIZABLES -----------------
 

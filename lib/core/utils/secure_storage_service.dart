@@ -41,4 +41,10 @@ class SecureStorageService {
   static Future<void> clearAll() async {
     await _storage.deleteAll();
   }
+  // Obtener DNI del usuario actualmente guardado
+  static Future<String?> getDNI() async {
+  final user = await getUser(); // ya existe este método
+  return user?.identificacion; // devuelve el DNI o null si no hay usuario
+  }
+
 }

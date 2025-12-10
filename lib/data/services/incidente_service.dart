@@ -2,79 +2,53 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../core/constants/api_constants.dart';
 import '../../core/utils/secure_storage_service.dart';
-import '../../data/services/geolocation_service.dart' as gps;
+import 'geolocation_service.dart' as gps;
 
 class IncidenteService {
-    Future<String?> _getAuthToken() async {
-      return await SecureStorageService.getToken();
-    }
+  // Obtenemos el token de autenticación
+  Future<String?> _getAuthToken() async {
+    return await SecureStorageService.getToken();
+  }
 
-    Future<bool> _crearincidencia(String dni, String tipo, [String? descripcion]) async {
-      final token = await _getAuthToken();
-      if (token == null) {
-        throw Exception('Token no encontrado, Inicie Sesion Nuevamente');
-      }
+  // Obtenemos el DNI guardado del usuario actual
+  Future<String?> _getUsuarioDNI() async {
+    return await SecureStorageService.getDNI(); // <- aquí guardas el DNI al login
+  }
 
-      final url = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.crearincidente}');
-      final pos = await gps.GeolocationService().getCurrentPosition();
-      if (pos == null) {
-        throw Exception('El gps no se pudo obtener');
-      }
+Future<bool> crearIncidencia(String tipo, [String? descripcion]) async {
+    // 🔹 Obtenemos el DNI desde el storage
+    final dni = await _getUsuarioDNI();
+    if (dni == null) throw Exception('No se encontró el DNI del usuario');
 
-      try {
-        final response = await http.post(
-          url,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-          body: jsonEncode({
-            'dni': dni,
-            if (descripcion != null && descripcion.isNotEmpty) 'Descripcion': descripcion,
-            'tipo': tipo,
-            'latitud': pos.latitude,
-            'longitud': pos.longitude,
-          }),
-        );
+    // 🔹 Obtenemos el token
+    final token = await _getAuthToken();
+    if (token == null) throw Exception('Token no encontrado');
 
-        if (response.statusCode == 200) {
-          return true;
-        } else {
-          return false;
-        }
-      } catch (e) {
-        return false;
-      }
-    }
+    // 🔹 Obtenemos la ubicación
+    final pos = await gps.GeolocationService().getCurrentPosition();
+    if (pos == null) throw Exception('No se pudo obtener GPS');
 
+    // 🔹 Enviamos la incidencia al backend
+    final url = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.crearincidente}');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'dni': dni,  // aquí usamos el DNI obtenido
+        'tipo': tipo,
+        if (descripcion != null && descripcion.isNotEmpty) 'Descripcion': descripcion,
+        'latitud': pos.latitude,
+        'longitud': pos.longitude,
+      }),
+    );
 
-    Future<List> _obtenerIncidentes(String dni) async{
-      final token = await _getAuthToken();
-      if (token == null){
-        throw Exception('No hay token, vuelve a iniciar sesion');
-      }
+    print('Status code POST: ${response.statusCode}');
+    print('Response POST: ${response.body}');
 
-      final url = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.obtenerIncidente}/$dni');
+    return response.statusCode == 201;
+}
 
-      try{
-        final response1 = await http.get(
-          url, 
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-
-        );
-
-        if (response1.statusCode == 200){
-          final List<dynamic> data = jsonDecode(response1.body);
-          return data;
-        } else {
-          throw Exception('Error al obtener incidentes: ${response1.statusCode} - ${response1.body}');
-        }
-      } catch(e){
-          throw Exception('Excepción al obtener incidentes: $e');
-      }
-
-    }
 }

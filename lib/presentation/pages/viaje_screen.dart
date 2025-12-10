@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/home_controller.dart';
 import '../../data/services/obtenerViaje.dart';
+import '../../data/services/incidente_service.dart';
+import '../../data/services/geolocation_service.dart' as gps;
 
 class MapaPage extends StatelessWidget {
   const MapaPage({super.key});
@@ -11,7 +13,6 @@ class MapaPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final homeController = context.watch<HomeController>();
     final dni = homeController.user?.identificacion ?? '';
-    
 
     if (dni.isEmpty) {
       return const Scaffold(
@@ -46,7 +47,8 @@ class MapaPage extends StatelessWidget {
         final origen = viaje['ruta_id']?['paraderos']?[0]?['nombre'] ?? '---';
         final destino = viaje['ruta_id']?['paraderos']?.last?['nombre'] ?? '---';
         final bus = viaje['bus_id']?['placa'] ?? '---';
-        final conductor = '${viaje['conductor_id']?['datos_personal']?['nombres'] ?? ''} '
+        final conductor =
+            '${viaje['conductor_id']?['datos_personal']?['nombres'] ?? ''} '
             '${viaje['conductor_id']?['datos_personal']?['apellidos'] ?? ''}';
 
         return Scaffold(
@@ -106,33 +108,36 @@ class MapaPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 40),
-                  _buildActionButton('EMERGENCIA TOTAL', const Color(0xFFB71C1C)),
+                  // Botón EMERGENCIA TOTAL
+                  Builder(
+                    builder: (btnContext) => _buildActionButton(
+                      btnContext,
+                      'EMERGENCIA TOTAL',
+                      const Color(0xFFB71C1C),
+                      dni,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () async {
-                      // Solo imprimir acción, sin sockets ni ubicación
                       final idViaje = viaje['_id'];
                       print('🚀 Finalizando viaje con ID: $idViaje');
 
-                      final exito = await ConductorService().cambiarEstadoViaje(idViaje, 'completado');
+                      final exito = await ConductorService()
+                          .cambiarEstadoViaje(idViaje, 'completado');
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              exito ? '✅ Viaje finalizado correctamente' : '❌ No se pudo finalizar el viaje'),
+                          backgroundColor: exito ? Colors.green : Colors.red,
+                        ),
+                      );
 
                       if (exito) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('✅ Viaje finalizado correctamente'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
                         Navigator.of(context).pushNamedAndRemoveUntil(
                           '/home',
                           (route) => false,
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('❌ No se pudo finalizar el viaje'),
-                            backgroundColor: Colors.red,
-                          ),
                         );
                       }
                     },
@@ -157,11 +162,38 @@ class MapaPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(String text, Color color) {
+  Widget _buildActionButton(BuildContext context, String text, Color color, String dni) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () async {
+          // Obtener ubicación actual
+          final pos = await gps.GeolocationService().getCurrentPosition();
+          if (pos == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('❌ No se pudo obtener ubicación'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+
+          // Crear incidencia
+          final exito = await IncidenteService().crearIncidencia(
+            "Desastre Natural", 
+            "Emergencia urgente, atender de inmediato"
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                exito ? '✅ Emergencia enviada' : '❌ No se pudo enviar la emergencia',
+              ),
+              backgroundColor: exito ? Colors.green : Colors.red,
+            ),
+          );
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           padding: const EdgeInsets.symmetric(vertical: 20),
